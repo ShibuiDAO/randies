@@ -1,0 +1,12 @@
+{
+  "name": "@shibuidao/randies",
+  "version": "1.0.0",
+  "author": "Nejc Drobnic <yo@quantumly.dev>",
+  "license": "AGPL-3.0-only",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.4.2"
+  },
+  "repository": "https://github.com/ShibuiDAO/randies.git"
+}
