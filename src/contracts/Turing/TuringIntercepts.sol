@@ -11,7 +11,6 @@ contract TuringIntercepts is ERC165, ITuringIntercepts {
     function supportsInterface(bytes4 interfaceId)
         public
         pure
-        virtual
         override(ERC165, IERC165)
         returns (bool)
     {

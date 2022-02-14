@@ -16,7 +16,7 @@ contract TuringHelper is ERC165, TuringIntercepts, Ownable, ITuringHelper {
     event AddPermittedCaller(address indexed _callerAddress);
     event RemovePermittedCaller(address indexed _callerAddress);
 
-    constructor() public {
+    constructor() {
         self = TuringHelper(address(this));
     }
 
@@ -24,7 +24,6 @@ contract TuringHelper is ERC165, TuringIntercepts, Ownable, ITuringHelper {
     function supportsInterface(bytes4 interfaceId)
         public
         pure
-        virtual
         override(ERC165, IERC165, TuringIntercepts)
         returns (bool)
     {

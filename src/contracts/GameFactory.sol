@@ -2,37 +2,43 @@
 pragma solidity ^0.8.9;
 
 import {ERC165} from "solid/utils/ERC165.sol";
+
+import {IERC165} from "solid/utils/interfaces/IERC165.sol";
+import {ITuringHelper} from "./Turing/TuringHelper.sol";
+import {IGameFactory} from "./IGameFactory.sol";
+import {IGame} from "./IGame.sol";
+
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {ITuringHelper} from "./Turing/TuringHelper.sol";
-
-import {IGameFactory} from "./IGameFactory.sol";
-import {IERC165} from "solid/utils/interfaces/IERC165.sol";
-
 contract GameFactory is ERC165, IGameFactory {
-    ITuringHelper public immutable turing;
-    GameFactory internal immutable self;
+    ITuringHelper private immutable turing;
+    GameFactory private immutable self;
+    address private immutable gameImplementation;
 
     mapping(address => bool) public games;
 
-    constructor(address _turingHelper) public {
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {}
+
+    constructor(address _turingHelper, address _gameImplementation) {
         require(
             ERC165Checker.supportsInterface(
                 _turingHelper,
                 type(ITuringHelper).interfaceId
             ),
-            "REGISTY_ADDRESS_NOT_COMPLIANT"
+            "HELPER_ADDRESS_NOT_COMPLIANT"
         );
 
         turing = ITuringHelper(_turingHelper);
-        self = GameFactory(address(this));
+        self = GameFactory(payable(address(this)));
+        gameImplementation = _gameImplementation;
     }
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId)
         public
         pure
-        virtual
         override(ERC165, IERC165)
         returns (bool)
     {
@@ -42,8 +48,20 @@ contract GameFactory is ERC165, IGameFactory {
     }
 
     modifier onlyGame() {
-        require(games[msg.sender], "Invalid Caller Address");
+        require(games[msg.sender], "NOT_GAME");
         _;
+    }
+
+    function createGameAndRun(
+        address payable[] calldata players,
+        uint256 stake
+    ) public payable override returns (address game) {
+        require(msg.value >= stake, "MISSING_STAKE");
+
+        game = createGame(players, stake);
+        IGame(game).run();
+
+        return game;
     }
 
     function createGame(address payable[] calldata players, uint256 stake)
@@ -52,12 +70,17 @@ contract GameFactory is ERC165, IGameFactory {
         override
         returns (address game)
     {
-        return address(0);
+        game = Clones.clone(gameImplementation);
+
+        IGame(game).initialize(players, stake);
+        games[game] = true;
+
+        return game;
     }
 
     function endGame(address winner) external payable onlyGame {
-        delete games[msg.sender];
         emit GameEnded(msg.sender, winner);
+        delete games[msg.sender];
     }
 
     function getRandom() external payable onlyGame returns (uint256) {
@@ -65,7 +88,7 @@ contract GameFactory is ERC165, IGameFactory {
     }
 
     function abstractTuringRandom() public returns (uint256) {
-        require(msg.sender == address(this), "SELF_CALL");
+        require(msg.sender == address(this), "FOREIGN_CALL");
         return turing.TuringRandom();
     }
 }

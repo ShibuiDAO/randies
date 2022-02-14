@@ -7,6 +7,11 @@ interface IGameFactory is IERC165 {
     event GameStarted(address indexed game);
     event GameEnded(address indexed game, address indexed winner);
 
+    function createGameAndRun(
+        address payable[] calldata players,
+        uint256 stake
+    ) external payable returns (address game);
+
     function createGame(address payable[] calldata players, uint256 stake)
         external
         payable
